@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testeur Service Autocomplétion Adresses</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .search-section {
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .input-container {
+            position: relative;
+        }
+        
+        .char-counter {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #f8f9fa;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+            pointer-events: none;
+        }
+        
+        .char-counter.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .stat-item {
+            background: #e3f2fd;
+            padding: 8px 12px;
+            border-radius: 4px;
+            color: #1976d2;
+            font-weight: bold;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: #666;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .result-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .result-item:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+        }
+        
+        .result-item.selected {
+            background: #e3f2fd;
+            border-color: #007bff;
+        }
+        
+        .score {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .address {
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .selected-address {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .search-status {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 Testeur Service Autocomplétion en Temps Réel</h1>
+        
+        <div class="search-section">
+            <label for="addressInput">Rechercher une adresse (autocomplétion dès 3 caractères) :</label>
+            <div class="input-container">
+                <input type="text" id="addressInput" placeholder="Ex: 32 rue de labeville 95690 nesles" />
+                <span class="char-counter" id="charCounter">0</span>
+            </div>
+            <button onclick="manualSearch()">Recherche manuelle</button>
+            <button onclick="clearResults()">Effacer</button>
+            <button onclick="toggleAutoComplete()" id="autoToggle">Désactiver auto</button>
+        </div>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-item">
+                <span>⏱️ Dernier temps: <span id="lastTime">-</span></span>
+            </div>
+            <div class="stat-item">
+                <span>📊 Temps moyen: <span id="avgTime">-</span></span>
+            </div>
+            <div class="stat-item">
+                <span>🔢 Requêtes: <span id="requestCount">0</span></span>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            🔄 Recherche en cours...
+        </div>
+        
+        <div id="searchStatus"></div>
+        <div id="selectedAddress"></div>
+        <div id="errorMessage"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Variables globales
+        let selectedAddress = null;
+        let autoCompleteEnabled = true;
+        let searchTimeout = null;
+        let requestCount = 0;
+        let responseTimes = [];
+        
+        // Configuration
+        const BASE_URL = 'http://127.0.0.1:8000';
+        const MIN_CHARS = 3;
+        const DEBOUNCE_DELAY = 300;
+        
+        console.log('🚀 Démarrage du script...');
+        
+        // Fonction de recherche principale
+        async function searchAddress(query, isManual) {
+            console.log('🔍 searchAddress appelée avec:', query);
+            
+            const searchQuery = query || document.getElementById('addressInput').value.trim();
+            
+            if (!searchQuery) {
+                clearResults();
+                return;
+            }
+            
+            if (searchQuery.length < MIN_CHARS && !isManual) {
+                updateSearchStatus('Saisissez au moins ' + MIN_CHARS + ' caractères pour déclencher la recherche automatique');
+                document.getElementById('results').innerHTML = '';
+                return;
+            }
+            
+            showLoading(true);
+            clearMessages();
+            updateSearchStatus('Recherche en cours pour: "' + searchQuery + '"');
+            
+            const startTime = performance.now();
+            
+            try {
+                const encodedQuery = encodeURIComponent(searchQuery);
+                const url = BASE_URL + '/address/autocomplete?q=' + encodedQuery;
+                
+                console.log('📡 URL de requête:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                updateStats(responseTime);
+                
+                if (!response.ok) {
+                    throw new Error('Erreur HTTP: ' + response.status + ' - ' + response.statusText);
+                }
+                
+                const data = await response.json();
+                console.log('📥 Réponse reçue en ' + responseTime + 'ms:', data);
+                
+                displayResults(data, responseTime);
+                updateSearchStatus('Recherche terminée: ' + data.length + ' résultat(s) trouvé(s) en ' + responseTime + 'ms');
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la recherche:', error);
+                showError('Erreur lors de la recherche: ' + error.message);
+                updateSearchStatus('Erreur lors de la recherche: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Fonction de recherche manuelle
+        function manualSearch() {
+            console.log('🖱️ Recherche manuelle déclenchée');
+            const query = document.getElementById('addressInput').value.trim();
+            searchAddress(query, true);
+        }
+        
+        // Mise à jour des statistiques
+        function updateStats(responseTime) {
+            requestCount++;
+            responseTimes.push(responseTime);
+            
+            if (responseTimes.length > 10) {
+                responseTimes.shift();
+            }
+            
+            const avgTime = Math.round(responseTimes.reduce(function(a, b) { return a + b; }, 0) / responseTimes.length);
+            
+            document.getElementById('lastTime').textContent = responseTime + 'ms';
+            document.getElementById('avgTime').textContent = avgTime + 'ms';
+            document.getElementById('requestCount').textContent = requestCount;
+            document.getElementById('stats').style.display = 'flex';
+        }
+        
+        // Affichage des résultats
+        function displayResults(results, responseTime) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (!results || results.length === 0) {
+                resultsDiv.innerHTML = '<div class="info">Aucun résultat trouvé pour cette recherche.</div>';
+                return;
+            }
+            
+            let html = '<h3>Résultats (' + results.length + ') - Temps de réponse: ' + responseTime + 'ms :</h3>';
+            
+            for (let i = 0; i < results.length; i++) {
+                const item = results[i];
+                const addressSafe = item.adresse.replace(/'/g, "\\'");
+                html += '<div class="result-item" onclick="selectAddress(' + i + ', \'' + addressSafe + '\', ' + item.score + ')">';
+                html += '<span class="score">' + Math.round(item.score * 100) + '%</span>';
+                html += '<span class="address">' + item.adresse + '</span>';
+                html += '</div>';
+            }
+            
+            resultsDiv.innerHTML = html;
+            window.currentResults = results;
+        }
+        
+        // Sélection d'une adresse
+        function selectAddress(index, address, score) {
+            const items = document.querySelectorAll('.result-item');
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove('selected');
+            }
+            
+            items[index].classList.add('selected');
+            
+            const selectedDiv = document.getElementById('selectedAddress');
+            selectedDiv.innerHTML = '<div class="selected-address">✅ Adresse sélectionnée: ' + address + ' (Score: ' + Math.round(score * 100) + '%)</div>';
+            
+            selectedAddress = window.currentResults[index];
+            console.log('✅ Adresse sélectionnée:', selectedAddress);
+        }
+        
+        // Gestion du loading
+        function showLoading(show) {
+            const loadingElement = document.getElementById('loading');
+            if (show) {
+                loadingElement.classList.add('active');
+            } else {
+                loadingElement.classList.remove('active');
+            }
+        }
+        
+        // Affichage des erreurs
+        function showError(message) {
+            document.getElementById('errorMessage').innerHTML = '<div class="error">' + message + '</div>';
+        }
+        
+        // Mise à jour du statut
+        function updateSearchStatus(message) {
+            document.getElementById('searchStatus').innerHTML = '<div class="search-status">' + message + '</div>';
+        }
+        
+        // Effacement des messages
+        function clearMessages() {
+            document.getElementById('errorMessage').innerHTML = '';
+            document.getElementById('selectedAddress').innerHTML = '';
+            document.getElementById('searchStatus').innerHTML = '';
+        }
+        
+        // Effacement des résultats
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('addressInput').value = '';
+            clearMessages();
+            selectedAddress = null;
+            window.currentResults = [];
+            updateCharCounter(0);
+        }
+        
+        // Mise à jour du compteur de caractères
+        function updateCharCounter(length) {
+            const counter = document.getElementById('charCounter');
+            counter.textContent = length;
+            
+            if (length >= MIN_CHARS) {
+                counter.classList.add('active');
+            } else {
+                counter.classList.remove('active');
+            }
+        }
+        
+        // Basculer l'autocomplétion
+        function toggleAutoComplete() {
+            autoCompleteEnabled = !autoCompleteEnabled;
+            const button = document.getElementById('autoToggle');
+            
+            if (autoCompleteEnabled) {
+                button.textContent = 'Désactiver auto';
+                button.style.backgroundColor = '#007bff';
+            } else {
+                button.textContent = 'Activer auto';
+                button.style.backgroundColor = '#6c757d';
+            }
+            
+            updateSearchStatus(autoCompleteEnabled ? 'Autocomplétion activée' : 'Autocomplétion désactivée - utilisez la recherche manuelle');
+        }
+        
+        // Gestionnaire d'événements pour l'input
+        function handleInput(e) {
+            console.log('🎯 Événement input déclenché');
+            
+            const value = e.target.value;
+            const length = value.length;
+            
+            console.log('📝 Valeur: "' + value + '", Longueur: ' + length);
+            
+            updateCharCounter(length);
+            
+            if (!autoCompleteEnabled) {
+                console.log('❌ Autocomplétion désactivée');
+                return;
+            }
+            
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            if (length === 0) {
+                clearResults();
+                return;
+            }
+            
+            if (length >= MIN_CHARS) {
+                console.log('✅ Longueur >= ' + MIN_CHARS + ', programmation de la recherche dans ' + DEBOUNCE_DELAY + 'ms');
+                searchTimeout = setTimeout(function() {
+                    console.log('🚀 Exécution de la recherche automatique');
+                    searchAddress(value);
+                }, DEBOUNCE_DELAY);
+            } else {
+                document.getElementById('results').innerHTML = '';
+                updateSearchStatus('Saisissez ' + (MIN_CHARS - length) + ' caractère(s) de plus pour déclencher la recherche');
+            }
+        }
+        
+        // Initialisation après chargement du DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 DOM chargé, initialisation...');
+            
+            const inputElement = document.getElementById('addressInput');
+            if (inputElement) {
+                console.log('✅ Élément input trouvé');
+                inputElement.addEventListener('input', handleInput);
+                inputElement.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        manualSearch();
+                    }
+                });
+            } else {
+                console.error('❌ ERREUR: Élément input non trouvé !');
+            }
+            
+            console.log('🌐 URL de base du service:', BASE_URL);
+            console.log('📏 Recherche automatique dès ' + MIN_CHARS + ' caractères');
+            console.log('⏰ Délai de debounce: ' + DEBOUNCE_DELAY + 'ms');
+            
+            updateSearchStatus('Prêt - Saisissez une adresse pour commencer');
+        });
+        
+        console.log('📜 Script principal chargé');
+    </script>
+</body>
+</html>
