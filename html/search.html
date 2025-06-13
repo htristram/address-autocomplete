@@ -3,233 +3,537 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testeur Service Autocomplétion Adresses</title>
+    <title>Recherche d'Adresse - Autocomplétion</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
         }
-        
-        .container {
-            background: white;
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
-            color: #333;
             text-align: center;
-            margin-bottom: 30px;
         }
-        
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
         .search-section {
             margin-bottom: 30px;
         }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-        
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #007bff;
-        }
-        
-        .input-container {
+
+        .search-container {
             position: relative;
+            margin-bottom: 20px;
         }
-        
-        .char-counter {
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        #addressInput {
+            width: 100%;
+            padding: 18px 60px 18px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        #addressInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
             position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #f8f9fa;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #666;
+            right: 20px;
+            color: #667eea;
+            font-size: 1.2rem;
             pointer-events: none;
         }
-        
-        .char-counter.active {
-            background: #007bff;
-            color: white;
+
+        .search-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
         }
-        
-        button {
-            background-color: #007bff;
-            color: white;
+
+        .btn {
             padding: 12px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-            margin-right: 10px;
-        }
-        
-        button:hover {
-            background-color: #0056b3;
-        }
-        
-        .stats {
+            transition: all 0.3s ease;
             display: flex;
-            justify-content: space-between;
-            margin: 20px 0;
-            font-size: 14px;
+            align-items: center;
+            gap: 8px;
         }
-        
-        .stat-item {
-            background: #e3f2fd;
-            padding: 8px 12px;
-            border-radius: 4px;
-            color: #1976d2;
-            font-weight: bold;
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-            color: #666;
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
         }
-        
-        .loading.active {
-            display: block;
-        }
-        
-        .result-item {
+
+        .btn-secondary {
             background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
+            color: #495057;
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             padding: 15px;
-            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
+        .toggle-switch.active {
+            background: #667eea;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e9ecef;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .results-header h3 {
+            color: #495057;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .result-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: auto;
+        }
+
         .result-item:hover {
-            background: #e9ecef;
-            border-color: #007bff;
+            border-color: #667eea;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        
+
         .result-item.selected {
-            background: #e3f2fd;
-            border-color: #007bff;
+            border-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
         }
-        
-        .score {
-            display: inline-block;
-            background: #007bff;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-        
+
         .address {
-            font-size: 16px;
-            color: #333;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            flex: 1;
         }
-        
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
+
+        .score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            min-width: 50px;
+            text-align: center;
         }
-        
-        .info {
-            background: #d1ecf1;
-            color: #0c5460;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
+
+        .result-item.selected .score {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         }
-        
-        .selected-address {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
-            font-weight: bold;
+
+        /* Styles pour les différents niveaux de score - Version compacte */
+        .result-item.high-score {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
         }
-        
-        .search-status {
-            background: #fff3cd;
-            color: #856404;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-size: 14px;
+
+        .result-item.high-score:hover {
+            border-color: #28a745;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25);
+        }
+
+        .result-item.high-score .score {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            animation: pulse 2s infinite;
+        }
+
+        .result-item.medium-score {
+            border-color: #ffc107;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+        }
+
+        .result-item.medium-score:hover {
+            border-color: #ffc107;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.25);
+        }
+
+        .result-item.medium-score .score {
+            background: linear-gradient(135deg, #ffc107 0%, #ffb347 100%);
+            color: #212529;
+        }
+
+        .result-item.low-score {
+            border-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            opacity: 0.85;
+        }
+
+        .result-item.low-score:hover {
+            border-color: #dc3545;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(220, 53, 69, 0.2);
+        }
+
+        .result-item.low-score .score {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        /* Animation pour les scores élevés - Version plus discrète */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.3);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(40, 167, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+
+        /* Badges pour identifier les niveaux - Version compacte */
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .score-badge.excellent {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+
+        .score-badge.good {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+
+        .score-badge.fair {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        /* Icônes pour les scores - Version plus petite */
+        .score-icon {
+            font-size: 0.8rem;
+        }
+
+        /* Réduction des marges et espaces pour version mobile */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .search-controls {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 10px 12px;
+            }
+
+            .address {
+                font-size: 0.95rem;
+            }
+
+            .score {
+                align-self: flex-end;
+                font-size: 0.8rem;
+                padding: 3px 10px;
+            }
+
+            .score-badge {
+                font-size: 0.7rem;
+                padding: 1px 4px;
+                margin-left: 6px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🏠 Testeur Service Autocomplétion en Temps Réel</h1>
-        
-        <div class="search-section">
-            <label for="addressInput">Rechercher une adresse (autocomplétion dès 3 caractères) :</label>
-            <div class="input-container">
-                <input type="text" id="addressInput" placeholder="Ex: 32 rue de labeville 95690 nesles" />
-                <span class="char-counter" id="charCounter">0</span>
-            </div>
-            <button onclick="manualSearch()">Recherche manuelle</button>
-            <button onclick="clearResults()">Effacer</button>
-            <button onclick="toggleAutoComplete()" id="autoToggle">Désactiver auto</button>
+        <div class="header">
+            <h1><i class="fas fa-map-marker-alt"></i> Recherche d'Adresse</h1>
+            <p>Autocomplétion intelligente avec analyse sémantique</p>
         </div>
-        
-        <div class="stats" id="stats" style="display: none;">
-            <div class="stat-item">
-                <span>⏱️ Dernier temps: <span id="lastTime">-</span></span>
+
+        <div class="content">
+            <div class="search-section">
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <input 
+                            type="text" 
+                            id="addressInput" 
+                            placeholder="Tapez votre adresse (ex: 123 rue de la Paix 75001 Paris)"
+                            autocomplete="off"
+                        >
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <div class="char-counter">
+                        <i class="fas fa-keyboard"></i>
+                        <span id="charCounter">0</span> caractères
+                    </div>
+                </div>
+
+                <div class="search-controls">
+                    <button class="btn btn-primary" onclick="manualSearch()">
+                        <i class="fas fa-search"></i>
+                        Rechercher
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearResults()">
+                        <i class="fas fa-times"></i>
+                        Effacer
+                    </button>
+                </div>
+
+                <div class="toggle-container">
+                    <i class="fas fa-magic"></i>
+                    <span>Autocomplétion automatique</span>
+                    <div class="toggle-switch active" id="autoCompleteToggle" onclick="toggleAutoComplete()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+
+                <div class="stats-grid" id="stats" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="requestCount">0</div>
+                        <div class="stat-label">Requêtes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="lastTime">0ms</div>
+                        <div class="stat-label">Dernier temps</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgTime">0ms</div>
+                        <div class="stat-label">Temps moyen</div>
+                    </div>
+                </div>
             </div>
-            <div class="stat-item">
-                <span>📊 Temps moyen: <span id="avgTime">-</span></span>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <span>Recherche en cours...</span>
             </div>
-            <div class="stat-item">
-                <span>🔢 Requêtes: <span id="requestCount">0</span></span>
+
+            <div id="errorMessage"></div>
+            <div id="searchStatus"></div>
+            <div id="selectedAddress"></div>
+
+            <div class="results-section">
+                <div id="results"></div>
             </div>
         </div>
-        
-        <div class="loading" id="loading">
-            🔄 Recherche en cours...
-        </div>
-        
-        <div id="searchStatus"></div>
-        <div id="selectedAddress"></div>
-        <div id="errorMessage"></div>
-        <div id="results"></div>
     </div>
 
     <script>
-        // Variables globales
-        let selectedAddress = null;
         let autoCompleteEnabled = true;
         let searchTimeout = null;
         let requestCount = 0;
         let responseTimes = [];
+        let selectedAddress = null;
         
         // Configuration
         const BASE_URL = 'http://127.0.0.1:8000';
@@ -238,61 +542,71 @@
         
         console.log('🚀 Démarrage du script...');
         
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('addressInput');
+            
+            input.addEventListener('input', function(e) {
+                const query = e.target.value.trim();
+                updateCharCounter(query.length);
+                
+                if (autoCompleteEnabled && query.length >= MIN_CHARS) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        searchAddress(query, false);
+                    }, DEBOUNCE_DELAY);
+                } else if (query.length < MIN_CHARS) {
+                    clearMessages();
+                    document.getElementById('results').innerHTML = '';
+                }
+            });
+
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    manualSearch();
+                }
+            });
+        });
+        
         // Fonction de recherche principale
         async function searchAddress(query, isManual) {
-            console.log('🔍 searchAddress appelée avec:', query);
-            
-            const searchQuery = query || document.getElementById('addressInput').value.trim();
-            
-            if (!searchQuery) {
-                clearResults();
+            if (!query || query.length < MIN_CHARS) {
+                if (isManual) {
+                    showError('Veuillez saisir au moins ' + MIN_CHARS + ' caractères.');
+                }
                 return;
             }
-            
-            if (searchQuery.length < MIN_CHARS && !isManual) {
-                updateSearchStatus('Saisissez au moins ' + MIN_CHARS + ' caractères pour déclencher la recherche automatique');
-                document.getElementById('results').innerHTML = '';
-                return;
-            }
-            
-            showLoading(true);
+
             clearMessages();
-            updateSearchStatus('Recherche en cours pour: "' + searchQuery + '"');
+            showLoading(true);
             
-            const startTime = performance.now();
+            const startTime = Date.now();
             
             try {
-                const encodedQuery = encodeURIComponent(searchQuery);
-                const url = BASE_URL + '/address/autocomplete?q=' + encodedQuery;
+                updateSearchStatus('🔍 Recherche en cours pour: "' + query + '"');
                 
-                console.log('📡 URL de requête:', url);
-                
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                const endTime = performance.now();
-                const responseTime = Math.round(endTime - startTime);
-                
-                updateStats(responseTime);
+                const response = await fetch(BASE_URL + '/address/autocomplete?q=' + encodeURIComponent(query));
+                const responseTime = Date.now() - startTime;
                 
                 if (!response.ok) {
-                    throw new Error('Erreur HTTP: ' + response.status + ' - ' + response.statusText);
+                    throw new Error('Erreur HTTP: ' + response.status);
                 }
                 
-                const data = await response.json();
-                console.log('📥 Réponse reçue en ' + responseTime + 'ms:', data);
+                const results = await response.json();
+                updateStats(responseTime);
+                displayResults(results, responseTime);
                 
-                displayResults(data, responseTime);
-                updateSearchStatus('Recherche terminée: ' + data.length + ' résultat(s) trouvé(s) en ' + responseTime + 'ms');
+                if (results.length === 0) {
+                    updateSearchStatus('Aucun résultat trouvé pour "' + query + '"');
+                } else {
+                    updateSearchStatus('✅ ' + results.length + ' résultat(s) trouvé(s) en ' + responseTime + 'ms');
+                }
                 
             } catch (error) {
-                console.error('❌ Erreur lors de la recherche:', error);
+                console.error('Erreur:', error);
                 showError('Erreur lors de la recherche: ' + error.message);
-                updateSearchStatus('Erreur lors de la recherche: ' + error.message);
+                updateSearchStatus('❌ Erreur lors de la recherche');
             } finally {
                 showLoading(false);
             }
@@ -319,7 +633,7 @@
             document.getElementById('lastTime').textContent = responseTime + 'ms';
             document.getElementById('avgTime').textContent = avgTime + 'ms';
             document.getElementById('requestCount').textContent = requestCount;
-            document.getElementById('stats').style.display = 'flex';
+            document.getElementById('stats').style.display = 'grid';
         }
         
         // Affichage des résultats
@@ -327,18 +641,42 @@
             const resultsDiv = document.getElementById('results');
             
             if (!results || results.length === 0) {
-                resultsDiv.innerHTML = '<div class="info">Aucun résultat trouvé pour cette recherche.</div>';
+                resultsDiv.innerHTML = '<div class="message info"><i class="fas fa-info-circle"></i> Aucun résultat trouvé pour cette recherche.</div>';
                 return;
             }
             
-            let html = '<h3>Résultats (' + results.length + ') - Temps de réponse: ' + responseTime + 'ms :</h3>';
+            let html = '<div class="results-header">';
+            html += '<h3><i class="fas fa-list"></i> ' + results.length + ' résultat(s)</h3>';
+            html += '<span class="badge">' + responseTime + 'ms</span>';
+            html += '</div>';
             
             for (let i = 0; i < results.length; i++) {
                 const item = results[i];
+                const scorePercent = Math.round(item.score * 100);
                 const addressSafe = item.adresse.replace(/'/g, "\\'");
-                html += '<div class="result-item" onclick="selectAddress(' + i + ', \'' + addressSafe + '\', ' + item.score + ')">';
-                html += '<span class="score">' + Math.round(item.score * 100) + '%</span>';
-                html += '<span class="address">' + item.adresse + '</span>';
+                
+                // Déterminer la classe CSS selon le score
+                let scoreClass = '';
+                let scoreBadge = '';
+                let scoreIcon = '';
+                
+                if (scorePercent >= 90) {
+                    scoreClass = 'high-score';
+                    scoreBadge = '<span class="score-badge excellent"><i class="fas fa-star score-icon"></i>Excellent</span>';
+                    scoreIcon = '<i class="fas fa-crown" style="color: #28a745; margin-right: 8px;"></i>';
+                } else if (scorePercent >= 70) {
+                    scoreClass = 'medium-score';
+                    scoreBadge = '<span class="score-badge good"><i class="fas fa-thumbs-up score-icon"></i>Bon</span>';
+                    scoreIcon = '<i class="fas fa-check-circle" style="color: #ffc107; margin-right: 8px;"></i>';
+                } else {
+                    scoreClass = 'low-score';
+                    scoreBadge = '<span class="score-badge fair"><i class="fas fa-info-circle score-icon"></i>Partiel</span>';
+                    scoreIcon = '<i class="fas fa-exclamation-triangle" style="color: #dc3545; margin-right: 8px;"></i>';
+                }
+                
+                html += '<div class="result-item ' + scoreClass + '" onclick="selectAddress(' + i + ', \'' + addressSafe + '\', ' + item.score + ')">';
+                html += '<div class="address">' + scoreIcon + '<i class="fas fa-map-marker-alt"></i> ' + item.adresse + scoreBadge + '</div>';
+                html += '<div class="score">' + scorePercent + '%</div>';
                 html += '</div>';
             }
             
@@ -356,7 +694,7 @@
             items[index].classList.add('selected');
             
             const selectedDiv = document.getElementById('selectedAddress');
-            selectedDiv.innerHTML = '<div class="selected-address">✅ Adresse sélectionnée: ' + address + ' (Score: ' + Math.round(score * 100) + '%)</div>';
+            selectedDiv.innerHTML = '<div class="message selected-address"><i class="fas fa-check-circle"></i> Adresse sélectionnée: ' + address + ' (Score: ' + Math.round(score * 100) + '%)</div>';
             
             selectedAddress = window.currentResults[index];
             console.log('✅ Adresse sélectionnée:', selectedAddress);
@@ -374,12 +712,12 @@
         
         // Affichage des erreurs
         function showError(message) {
-            document.getElementById('errorMessage').innerHTML = '<div class="error">' + message + '</div>';
+            document.getElementById('errorMessage').innerHTML = '<div class="message error"><i class="fas fa-exclamation-triangle"></i> ' + message + '</div>';
         }
         
         // Mise à jour du statut
         function updateSearchStatus(message) {
-            document.getElementById('searchStatus').innerHTML = '<div class="search-status">' + message + '</div>';
+            document.getElementById('searchStatus').innerHTML = '<div class="message info">' + message + '</div>';
         }
         
         // Effacement des messages
@@ -403,92 +741,21 @@
         function updateCharCounter(length) {
             const counter = document.getElementById('charCounter');
             counter.textContent = length;
-            
-            if (length >= MIN_CHARS) {
-                counter.classList.add('active');
-            } else {
-                counter.classList.remove('active');
-            }
         }
         
         // Basculer l'autocomplétion
         function toggleAutoComplete() {
             autoCompleteEnabled = !autoCompleteEnabled;
-            const button = document.getElementById('autoToggle');
+            const toggle = document.getElementById('autoCompleteToggle');
             
             if (autoCompleteEnabled) {
-                button.textContent = 'Désactiver auto';
-                button.style.backgroundColor = '#007bff';
+                toggle.classList.add('active');
             } else {
-                button.textContent = 'Activer auto';
-                button.style.backgroundColor = '#6c757d';
+                toggle.classList.remove('active');
             }
             
-            updateSearchStatus(autoCompleteEnabled ? 'Autocomplétion activée' : 'Autocomplétion désactivée - utilisez la recherche manuelle');
+            console.log('🔄 Autocomplétion:', autoCompleteEnabled ? 'activée' : 'désactivée');
         }
-        
-        // Gestionnaire d'événements pour l'input
-        function handleInput(e) {
-            console.log('🎯 Événement input déclenché');
-            
-            const value = e.target.value;
-            const length = value.length;
-            
-            console.log('📝 Valeur: "' + value + '", Longueur: ' + length);
-            
-            updateCharCounter(length);
-            
-            if (!autoCompleteEnabled) {
-                console.log('❌ Autocomplétion désactivée');
-                return;
-            }
-            
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-            }
-            
-            if (length === 0) {
-                clearResults();
-                return;
-            }
-            
-            if (length >= MIN_CHARS) {
-                console.log('✅ Longueur >= ' + MIN_CHARS + ', programmation de la recherche dans ' + DEBOUNCE_DELAY + 'ms');
-                searchTimeout = setTimeout(function() {
-                    console.log('🚀 Exécution de la recherche automatique');
-                    searchAddress(value);
-                }, DEBOUNCE_DELAY);
-            } else {
-                document.getElementById('results').innerHTML = '';
-                updateSearchStatus('Saisissez ' + (MIN_CHARS - length) + ' caractère(s) de plus pour déclencher la recherche');
-            }
-        }
-        
-        // Initialisation après chargement du DOM
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 DOM chargé, initialisation...');
-            
-            const inputElement = document.getElementById('addressInput');
-            if (inputElement) {
-                console.log('✅ Élément input trouvé');
-                inputElement.addEventListener('input', handleInput);
-                inputElement.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        manualSearch();
-                    }
-                });
-            } else {
-                console.error('❌ ERREUR: Élément input non trouvé !');
-            }
-            
-            console.log('🌐 URL de base du service:', BASE_URL);
-            console.log('📏 Recherche automatique dès ' + MIN_CHARS + ' caractères');
-            console.log('⏰ Délai de debounce: ' + DEBOUNCE_DELAY + 'ms');
-            
-            updateSearchStatus('Prêt - Saisissez une adresse pour commencer');
-        });
-        
-        console.log('📜 Script principal chargé');
     </script>
 </body>
 </html>

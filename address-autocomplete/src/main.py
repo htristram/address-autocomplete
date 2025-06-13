@@ -3,9 +3,12 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from address_parser import AddressParser
+from urllib.parse import unquote_plus
 import sys
 from loguru import logger
+from config import ServiceConfig, LogLevel
 import meilisearch
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -15,12 +18,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-masterKey = "e615f1fdc87b6de90240cf4501f611e7866519918e9b44bd1be9ff4b02b7fd7d"
 mini_len_for_parse = 4
+config = ServiceConfig()
 
-client = meilisearch.Client("http://127.0.0.1:7700", masterKey)
+client = meilisearch.Client(config.meilisearch_url, config.meilisearch_key)
 # An index is where the documents are stored.
 index = client.index("adresses")
+
+logger.remove()  # Supprimer le handler par défaut
+logger.add(
+    sink=sys.stderr,
+    level=config.log_level,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+)
 
 
 @app.get("/")
@@ -38,13 +48,15 @@ async def autocomplete_search(
     limit: int = 20,  # nombre de résultats
     country: str = 'FRA'  # Pays
 ):
+    q = unquote_plus(q)
     parser = AddressParser()
     filter_search = ""
     try:
         if len(q) >= mini_len_for_parse:
             result = parser.parse(q)
-            parser.print_analyse()
-            parser.print_choice()
+            if config.log_level == LogLevel.DEBUG:
+                parser.print_analyse()
+                parser.print_choice()
 
             postal_code = parser.get_component("postcode")
             if postal_code:
@@ -97,5 +109,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
-        log_level="debug"
+        log_level=config.log_level
     )
+    
+
