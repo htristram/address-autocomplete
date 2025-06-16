@@ -48,12 +48,13 @@ async def autocomplete_search(
     limit: int = 20,  # nombre de résultats
     country: str = 'FRA'  # Pays
 ):
-    q = unquote_plus(q)
+    request = unquote_plus(q)
+    
     parser = AddressParser()
     filter_search = ""
     try:
-        if len(q) >= mini_len_for_parse:
-            result = parser.parse(q)
+        if len(request) >= mini_len_for_parse:
+            result = parser.parse(request)
             if config.log_level == LogLevel.DEBUG:
                 parser.print_analyse()
                 parser.print_choice()
@@ -70,17 +71,15 @@ async def autocomplete_search(
                 if len(postal_code) > 0:
                     filter_search = "(" + " OR ".join(filter_cp) + ")"
 
-                q=parser.get_address_without(["postcode"])
-            #city = parser.get_component("city")
-            #house_number = parser.get_component("house_number")
-
-            logger.debug(f"Filtre de recherche : {filter_search}")
-
+                request=parser.get_address_without(["postcode"])
         else:
             logger.debug("trop court pour le parser")
-
+            
+        logger.debug(f"Saisie : {q}")
+        logger.debug(f"Recherche : {request}")
+        logger.debug(f"Filtre de recherche : {filter_search}")
         result = index.search(
-            q, {"showRankingScore": True, "filter": filter_search}
+            request, {"showRankingScore": True, "filter": filter_search}
         )
         respons=[]
         if len(result["hits"])>0:
