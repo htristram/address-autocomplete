@@ -59,19 +59,31 @@ async def autocomplete_search(
                 parser.print_analyse()
                 parser.print_choice()
 
+            filter = [] 
+            """ si on trouve un truc qui commence à ressembler à un CP,
+            on le passe en filtre"""
             postal_code = parser.get_component("postcode")
             if postal_code:
-                filter_cp = []
                 for cp in postal_code:
                     if len(str(cp["value"])) == 5:
-                        filter_cp.append(f"code_postal = {cp["value"]}")
+                        filter.append(f"code_postal = {cp["value"]}")
                     else:
-                        filter_cp.append(f"code_postal STARTS WITH {cp["value"]}")
-
-                if len(postal_code) > 0:
-                    filter_search = "(" + " OR ".join(filter_cp) + ")"
+                        filter.append(f"code_postal STARTS WITH {cp["value"]}")
 
                 request=parser.get_address_without(["postcode"])
+            
+            """ si city contient 2 valeurs et qu'il n'y a pas de road, 
+            on considére que le second mot est une ville qu'on filtre
+            """ 
+            city = parser.get_component("city")
+            road = parser.get_component("road")
+            if len(city)>1 and len(road)==0:
+                filter.append(f"nom_commune CONTAINS {city[-1]['value']}")
+            
+            # Si il y a des filtres, on les assemble en OR
+            if len(filter)>0:
+                filter_search = "(" + " OR ".join(filter) + ")"  
+            
         else:
             logger.debug("trop court pour le parser")
             
