@@ -14,7 +14,8 @@ class LogLevel(IntEnum):
 class ServiceConfig:
     def __init__(self, 
                  meilisearch_url: Optional[str] = None,
-                 meilisearch_key: Optional[str] = None
+                 meilisearch_key: Optional[str] = None,
+                 meilisearch_index: Optional[str] = None,
                  ):
         
         self.meilisearch_url = meilisearch_url or os.getenv(
@@ -24,6 +25,11 @@ class ServiceConfig:
         self.meilisearch_key = meilisearch_key or os.getenv(
             'TRUSTY_ADDRESS_SEARCH_KEY' # Clé API de recherche meilisearch
         )
+        self.meilisearch_index = meilisearch_index or os.getenv(
+            'TRUSTY_ADDRESS_DATABASE_INDEX', 
+            'adresses_test'  # Nom de l'index par défaut
+        )
+        
         log = os.getenv(
             'TRUSTY_ADDRESS_LOG_LEVEL',
             'WARNING'

@@ -595,12 +595,15 @@
                 
                 const results = await response.json();
                 updateStats(responseTime);
-                displayResults(results, responseTime);
-                
+                if (results['status'] == 'OK'){
+                    displayResults(results['choices'], responseTime);
+                } else {
+                    displayAlert(results['status'])
+                }
                 if (results.length === 0) {
                     updateSearchStatus('Aucun résultat trouvé pour "' + query + '"');
                 } else {
-                    updateSearchStatus('✅ ' + results.length + ' résultat(s) trouvé(s) en ' + responseTime + 'ms');
+                    updateSearchStatus('✅ ' + results['choices'].length + ' résultat(s) trouvé(s) en ' + responseTime + 'ms');
                 }
                 
             } catch (error) {
@@ -636,6 +639,52 @@
             document.getElementById('stats').style.display = 'grid';
         }
         
+        // Affichage d'une erreur ou d'un warning
+        function displayAlert(status){
+            const resultsDiv = document.getElementById('results');
+ 
+            let message = '';
+            switch(status) {
+                case 'TOO_SHORT':
+                    message = 'La demande est trop courte, continuez votre saisie';
+                    break;
+                case 'NO_RESULTS':
+                    message = 'Aucun résultat trouvé pour cette recherche';
+                    break;
+                case 'INVALID_QUERY':
+                    message = 'Requête invalide - veuillez vérifier votre saisie';
+                    break;
+                case 'SERVER_ERROR':
+                    message = 'Erreur serveur - veuillez réessayer plus tard';
+                    break;
+                case 'RATE_LIMIT':
+                    message = 'Trop de requêtes - veuillez patienter';
+                    break;
+                case 'TIMEOUT':
+                    message = 'Délai d\'attente dépassé';
+                    break;
+                default:
+                    message = status;
+                    break;
+            }
+//            let html = '<div class="results-header">';
+//            html += '<h3><i class="fas fa-list"></i>&nbsp;Aucun résultat</h3>';
+//            html += '</div>';
+
+            let html = ''
+            scoreClass = 'low-score';
+            scoreBadge = '<span class="score-badge fair"><i class="fas fa-info-circle score-icon"></i>Partiel</span>';
+            scoreIcon = '<i class="fas fa-exclamation-triangle" style="color: #dc3545; margin-right: 8px;"></i>';
+
+            html += '<div class="result-item low-score">';
+            html += '<div class="address">' + scoreIcon + ' ' + message + '</div>';
+            html += '</div>';
+ 
+            resultsDiv.innerHTML = html;
+            window.currentResults = results;
+
+
+        }
         // Affichage des résultats
         function displayResults(results, responseTime) {
             const resultsDiv = document.getElementById('results');

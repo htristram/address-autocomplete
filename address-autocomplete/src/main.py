@@ -21,9 +21,10 @@ app.add_middleware(
 mini_len_for_parse = 4
 config = ServiceConfig()
 
+logger.info(f"Connexion index {config.meilisearch_index} sur {config.meilisearch_url}")
 client = meilisearch.Client(config.meilisearch_url, config.meilisearch_key)
 # An index is where the documents are stored.
-index = client.index("adresses")
+index = client.index(config.meilisearch_index)
 
 logger.remove()  # Supprimer le handler par défaut
 logger.add(
@@ -54,7 +55,8 @@ async def autocomplete_search(
     filter_search = ""
     try:
         if len(request) >= mini_len_for_parse:
-            result = parser.parse(request)
+            parser.parse(request)
+            request = parser.get_address()
             if config.log_level == LogLevel.DEBUG:
                 parser.print_analyse()
                 parser.print_choice()
@@ -78,7 +80,8 @@ async def autocomplete_search(
             city = parser.get_component("city")
             road = parser.get_component("road")
             if len(city)>1 and len(road)==0:
-                filter.append(f"nom_commune CONTAINS {city[-1]['value']}")
+                for commune in city:
+                    filter.append(f"nom_commune CONTAINS '{commune['value']}'")
             
             # Si il y a des filtres, on les assemble en OR
             if len(filter)>0:
@@ -86,6 +89,7 @@ async def autocomplete_search(
             
         else:
             logger.debug("trop court pour le parser")
+            return { "status": "TOO_SHORT", "choices": [] }
             
         logger.debug(f"Saisie : {q}")
         logger.debug(f"Recherche : {request}")
@@ -108,7 +112,8 @@ async def autocomplete_search(
                     "nom_commune": hit.get('nom_commune', None),
                 })
 
-        return respons
+        return { "status": "OK", "choices": respons }
+        
     except Exception as e:
         logger.error(f"Erreur lors de l'analyse de '{q}': {e}")
         
