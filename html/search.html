@@ -456,8 +456,9 @@
 <body>
     <div class="container">
         <div class="header">
+            <img src="Color logo - no background.png" alt="Logo" style="max-height: 200px; margin-bottom: 15px;">
             <h1><i class="fas fa-map-marker-alt"></i> Recherche d'Adresse</h1>
-            <p>Autocomplétion intelligente avec analyse sémantique</p>
+            <p>Autocomplétion bosstée au NLP (Natural Language Processing)</p>
         </div>
 
         <div class="content">
@@ -596,9 +597,9 @@
                 const results = await response.json();
                 updateStats(responseTime);
                 if (results['status'] == 'OK'){
-                    displayResults(results['choices'], responseTime);
+                    displayResults(results['choices'], responseTime, results['message'],);
                 } else {
-                    displayAlert(results['status'])
+                    displayAlert(results['message'])
                 }
                 if (results.length === 0) {
                     updateSearchStatus('Aucun résultat trouvé pour "' + query + '"');
@@ -640,38 +641,10 @@
         }
         
         // Affichage d'une erreur ou d'un warning
-        function displayAlert(status){
+        function displayAlert(message){
             const resultsDiv = document.getElementById('results');
- 
-            let message = '';
-            switch(status) {
-                case 'TOO_SHORT':
-                    message = 'La demande est trop courte, continuez votre saisie';
-                    break;
-                case 'NO_RESULTS':
-                    message = 'Aucun résultat trouvé pour cette recherche';
-                    break;
-                case 'INVALID_QUERY':
-                    message = 'Requête invalide - veuillez vérifier votre saisie';
-                    break;
-                case 'SERVER_ERROR':
-                    message = 'Erreur serveur - veuillez réessayer plus tard';
-                    break;
-                case 'RATE_LIMIT':
-                    message = 'Trop de requêtes - veuillez patienter';
-                    break;
-                case 'TIMEOUT':
-                    message = 'Délai d\'attente dépassé';
-                    break;
-                default:
-                    message = status;
-                    break;
-            }
-//            let html = '<div class="results-header">';
-//            html += '<h3><i class="fas fa-list"></i>&nbsp;Aucun résultat</h3>';
-//            html += '</div>';
-
             let html = ''
+
             scoreClass = 'low-score';
             scoreBadge = '<span class="score-badge fair"><i class="fas fa-info-circle score-icon"></i>Partiel</span>';
             scoreIcon = '<i class="fas fa-exclamation-triangle" style="color: #dc3545; margin-right: 8px;"></i>';
@@ -686,7 +659,7 @@
 
         }
         // Affichage des résultats
-        function displayResults(results, responseTime) {
+        function displayResults(results, responseTime, message) {
             const resultsDiv = document.getElementById('results');
             
             if (!results || results.length === 0) {
@@ -694,11 +667,19 @@
                 return;
             }
             
-            let html = '<div class="results-header">';
+            let html = ''
+            if (message != ''){
+                html += '<div class="result-item medium-score">';
+                html += '<div class="address">' + message + '</div>';
+                html += '</div>';
+            }
+            html += '<div class="results-header">';
             html += '<h3><i class="fas fa-list"></i> ' + results.length + ' résultat(s)</h3>';
             html += '<span class="badge">' + responseTime + 'ms</span>';
             html += '</div>';
             
+
+
             for (let i = 0; i < results.length; i++) {
                 const item = results[i];
                 const scorePercent = Math.round(item.score * 100);

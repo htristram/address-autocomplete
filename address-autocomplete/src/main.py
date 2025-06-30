@@ -8,6 +8,7 @@ import sys
 from loguru import logger
 from config import ServiceConfig, LogLevel
 import meilisearch
+import query
 
 app = FastAPI()
 app.add_middleware(
@@ -34,6 +35,7 @@ logger.add(
 )
 
 
+    
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -47,12 +49,14 @@ def read_item(item_id: int, q: Union[str, None] = None):
 async def autocomplete_search(
     q: str,  # terme de recherche
     limit: int = 20,  # nombre de résultats
-    country: str = 'FRA'  # Pays
+    country: str = 'FRA',  # Pays
+    sequence: str = 'first'
 ):
     request = unquote_plus(q)
     
     parser = AddressParser()
     filter_search = ""
+    
     try:
         if len(request) >= mini_len_for_parse:
             parser.parse(request)
@@ -62,6 +66,7 @@ async def autocomplete_search(
                 parser.print_choice()
 
             filter = [] 
+            respons = [] 
             """ si on trouve un truc qui commence à ressembler à un CP,
             on le passe en filtre"""
             postal_code = parser.get_component("postcode")
@@ -80,8 +85,8 @@ async def autocomplete_search(
             city = parser.get_component("city")
             road = parser.get_component("road")
             if len(city)>1 and len(road)==0:
-                for commune in city:
-                    filter.append(f"nom_commune CONTAINS '{commune['value']}'")
+                #for commune in city:
+                filter.append(f"nom_commune CONTAINS '{city[-1]['value']}'")
             
             # Si il y a des filtres, on les assemble en OR
             if len(filter)>0:
@@ -89,7 +94,7 @@ async def autocomplete_search(
             
         else:
             logger.debug("trop court pour le parser")
-            return { "status": "TOO_SHORT", "choices": [] }
+            return { "status": "TOO_SHORT", "message": "The request is too short, complete your input", "choices": [] }
             
         logger.debug(f"Saisie : {q}")
         logger.debug(f"Recherche : {request}")
@@ -97,22 +102,36 @@ async def autocomplete_search(
         result = index.search(
             request, {"showRankingScore": True, "filter": filter_search}
         )
-        respons=[]
-        if len(result["hits"])>0:
+        # Affichage des réponses 
+        if config.log_level == LogLevel.DEBUG:
             for hit in result["hits"]:
                 logger.debug(f"Score: {hit.get('_rankingScore', 0.0):.2f} : {hit.get('adresse')} ")
-                respons.append({
-                    "score": round(hit.get('_rankingScore', 0.0), 2),
-                    "adresse": hit.get('adresse', None),
-                    "id": hit.get('id', None),
-                    "numero": hit.get('numero', None),
-                    "rep": hit.get('rep', None),
-                    "nom_voie": hit.get('nom_voie', None),
-                    "code_postal": hit.get('code_postal', None),
-                    "nom_commune": hit.get('nom_commune', None),
-                })
+                
+        if len(result["hits"])>0:
+            mini = result['hits'][0]['_rankingScore']
+            nb = len(result['hits'])
+        else:
+            mini=0
+            nb=0
+        logger.debug(f"Score mini = {mini}, nombre de réponses = {nb}")
+        
 
-        return { "status": "OK", "choices": respons }
+        if config.search_wo_house_number and sequence == 'first' and ((mini <= config.score_mini_swap_sequence and nb>0) or nb==0):
+            house_number = parser.get_component("house_number")
+            if len(house_number) > 0:    
+                logger.debug(f"Réponse insuffisante, repasse avec la séquence 'house_number'")
+                request=parser.get_address_without(["house_number"])
+                return await autocomplete_search(request, 20, 'FRA', 'wo_house_number')
+            else:
+                respons = query.build_respons(result)
+        elif len(result["hits"])>0:
+            respons = query.build_respons(result)
+        
+        if sequence == 'wo_house_number':
+            message = 'Search made without house number'
+        else:
+            message = ''
+        return { "status": "OK", "message": message, "choices": respons }
         
     except Exception as e:
         logger.error(f"Erreur lors de l'analyse de '{q}': {e}")
